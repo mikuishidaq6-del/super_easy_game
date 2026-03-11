@@ -88,6 +88,59 @@ enum CharacterStage {
   }
 }
 
+/// ユーザーデータ
+class User {
+  int level;
+  int exp;
+  int coin;
+  int streakDays;
+  String lastLoginDate;
+
+  User({
+    required this.level,
+    required this.exp,
+    required this.coin,
+    required this.streakDays,
+    required this.lastLoginDate,
+  });
+}
+
+/// 日々の記録
+class DailyRecord {
+  String date;
+  int faceScale;
+  int steps;
+  bool toothBrushed;
+  int gargleCount;
+  bool bodyCare;
+  bool shower;
+  bool medicationTaken;
+
+  DailyRecord({
+    required this.date,
+    required this.faceScale,
+    required this.steps,
+    required this.toothBrushed,
+    required this.gargleCount,
+    required this.bodyCare,
+    required this.shower,
+    required this.medicationTaken,
+  });
+}
+
+/// アイテムデータ
+class Item {
+  String itemId;
+  String itemName;
+  int ownedCount;
+
+  Item({
+    required this.itemId,
+    required this.itemName,
+    required this.ownedCount,
+  });
+}
+
 /// 健康アクティビティ
 class HealthActivity {
   final String id;

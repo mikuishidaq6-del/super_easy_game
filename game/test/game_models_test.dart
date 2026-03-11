@@ -53,6 +53,46 @@ void main() {
     });
   });
 
+  group('User tests', () {
+    test('User initializes with correct values', () {
+      final user = User(
+        level: 1,
+        exp: 0,
+        coin: 10,
+        streakDays: 3,
+        lastLoginDate: '2024-01-01',
+      );
+      expect(user.level, 1);
+      expect(user.exp, 0);
+      expect(user.coin, 10);
+      expect(user.streakDays, 3);
+      expect(user.lastLoginDate, '2024-01-01');
+    });
+  });
+
+  group('DailyRecord tests', () {
+    test('DailyRecord creates with all fields', () {
+      final record = DailyRecord(
+        date: '2024-01-01',
+        faceScale: 3,
+        steps: 500,
+        toothBrushed: true,
+        gargleCount: 2,
+        bodyCare: false,
+        shower: true,
+        medicationTaken: true,
+      );
+      expect(record.date, '2024-01-01');
+      expect(record.faceScale, 3);
+      expect(record.steps, 500);
+      expect(record.toothBrushed, isTrue);
+      expect(record.gargleCount, 2);
+      expect(record.bodyCare, isFalse);
+      expect(record.shower, isTrue);
+      expect(record.medicationTaken, isTrue);
+    });
+  });
+
   group('HealthActivity tests', () {
     test('All activities are defined', () {
       expect(HealthActivity.all.length, 4);
