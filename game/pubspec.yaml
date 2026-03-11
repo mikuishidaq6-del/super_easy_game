@@ -1,7 +1,8 @@
 name: super_easy_game
-description: 育成ゲーム - 血液がん患者のための来ただけで成長するゲーム
+description: 血液がん患者向け育成ゲーム「来ただけで成長するゲーム」のFlutterアプリケーション。
 publish_to: 'none'
-version: 1.0.0+1
+
+version: 0.1.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
