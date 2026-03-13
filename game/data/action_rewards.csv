@@ -1,0 +1,7 @@
+action,exp_reward,max_count
+face_input,20,1 
+tooth_brushing,10,1
+gargle,5,5
+body_care,10,1
+shower,15,1
+medication,15,3
