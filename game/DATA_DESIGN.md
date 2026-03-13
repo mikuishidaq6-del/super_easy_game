@@ -110,7 +110,7 @@ CSVファイルは `data/` フォルダに格納されています。
 
 ## モデルファイル一覧
 
-モデルファイルは `game/lib/models/game_models.dart` に格納されています。
+モデルファイルは `game/lib/models/` フォルダに格納されています。
 
 ---
 
@@ -163,7 +163,7 @@ CSVファイルは `data/` フォルダに格納されています。
 |---|---|---|
 | date | String | 記録した日付 |
 | faceScale | int | フェイス入力（1〜5） |
-| steps | int | その日の歩数 |
+| steps | int | その日の歩数（0〜10000） |
 | toothBrushed | bool | 歯磨きしたか |
 | gargleCount | int | うがいした回数（0〜5） |
 | bodyCare | bool | 体拭きしたか |
@@ -191,3 +191,55 @@ CSVファイルは `data/` フォルダに格納されています。
 | body_care | 体拭き | 10 | 1 | 1 |
 | shower | シャワー | 15 | 2 | 1 |
 | medicine | お薬のめたね | 15 | 2 | 3 |
+
+---
+
+#### StepConfig（歩数設定）
+
+| 定数 | 値 | 説明 |
+|---|---|---|
+| stepMax | 10000 | 歩数の上限値（これ以上はカウントしない） |
+| stepDefault | 0 | 未取得時のデフォルト歩数 |
+| overwriteSameDate | true | 同じ日付のデータは上書きする |
+
+**設計方針**
+- 10000歩を上限とし、それ以上歩いても10000として扱う
+- 歩数が取得できなかった日は0として記録する
+- 同じ日に複数回記録した場合は最新のデータで上書きする
+
+---
+
+### data_loader.dart
+
+**役割：CSVファイルを読み込んでgame_models.dartの形に変換するクラス**
+
+| 関数名 | 戻り値 | 説明 |
+|---|---|---|
+| loadLevelTable() | Map\<int, int\> | level_table.csvを読み込む |
+| loadStepRewards() | List\<Map\<String, int\>\> | step_rewards.csvを読み込む |
+| loadCharacterStates() | List\<Map\<String, dynamic\>\> | character_state.csvを読み込む |
+| loadActionRewards() | List\<Map\<String, dynamic\>\> | action_rewards.csvを読み込む |
+
+---
+
+### calculations.dart
+
+**役割：CSVデータを使ったゲームの判定関数をまとめたクラス**
+
+| 関数名 | 引数 | 戻り値 | 説明 |
+|---|---|---|---|
+| getExpFromSteps(steps) | int | Future\<int\> | 歩数から獲得EXPを返す |
+| getStateFromSteps(steps) | int | Future\<String\> | 歩数からキャラ状態を返す |
+| getLevelFromExp(exp) | int | Future\<int\> | 経験値からレベルを返す |
+
+**使い方例**
+```dart
+// 歩数からEXPを取得
+final exp = await Calculations.getExpFromSteps(500); // 30が返る
+
+// 歩数からキャラ状態を取得
+final state = await Calculations.getStateFromSteps(500); // '元気'が返る
+
+// 経験値からレベルを取得
+final level = await Calculations.getLevelFromExp(800); // 2が返る
+```
