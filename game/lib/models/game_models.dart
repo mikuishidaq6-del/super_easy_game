@@ -154,7 +154,7 @@ class HealthActivity {
     required this.emoji,
     required this.expReward,
     required this.coinReward,
-    required this.maxCount,
+    this.maxCount = 1,
   });
 
   static const List<HealthActivity> all = [
