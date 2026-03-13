@@ -67,7 +67,7 @@ class DataLoader {
   }
 
   /// 行動報酬テーブルを読み込む
-  /// 戻り値: HealthActivityのリスト
+  /// 戻り値: { 'action': String, 'exp_reward': int, 'max_count': int } のリスト
   /// 使い方: final activities = await DataLoader.loadActionRewards();
   static Future<List<Map<String, dynamic>>> loadActionRewards() async {
     final raw = await rootBundle.loadString('data/action_rewards.csv');
@@ -84,31 +84,5 @@ class DataLoader {
       });
     }
     return result;
-  }
-
-  /// 歩数からEXPを取得する
-  /// 使い方: final exp = await DataLoader.getExpFromSteps(500);
-  static Future<int> getExpFromSteps(int steps) async {
-    // StepConfigの上限を適用
-    final clampedSteps = steps.clamp(0, StepConfig.stepMax);
-    final rewards = await loadStepRewards();
-    for (final reward in rewards) {
-      if (clampedSteps >= reward['min']! && clampedSteps <= reward['max']!) {
-        return reward['exp']!;
-      }
-    }
-    return 0;
-  }
-
-  /// 歩数からキャラクター状態を取得する
-  /// 使い方: final state = await DataLoader.getStateFromSteps(500);
-  static Future<String> getStateFromSteps(int steps) async {
-    final states = await loadCharacterStates();
-    for (final row in states) {
-      if (steps >= row['min'] && steps <= row['max']) {
-        return row['state'];
-      }
-    }
-    return 'ふつう';
   }
 }
