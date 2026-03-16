@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../models/game_models.dart';
+import '../models/Calculations.dart';
 
 /// ゲーム全体の状態を管理するProvider
 class GameProvider extends ChangeNotifier {
@@ -164,10 +165,14 @@ class GameProvider extends ChangeNotifier {
   }
 
   /// 歩数を手動入力して経験値とコインを加算
-  Future<Map<String, int>> addSteps(int steps) async {
+  Future<Map<String, int>> addSteps(int? rawSteps) async {
+    final validSteps = Calculations.normalizeSteps(rawSteps);
+
     final threshold = _todayFaceScale?.stepThreshold ?? 100;
-    final prevCycles = _todaySteps ~/ threshold;
-    _todaySteps += steps;
+    final prevTodaySteps = Calculations.normalizeSteps(_todaySteps);
+    final prevCycles = prevTodaySteps ~/ threshold;
+
+    _todaySteps = (prevTodaySteps + validSteps).clamp(0, StepConfig.stepMax);
     final newCycles = _todaySteps ~/ threshold;
     final cyclesGained = newCycles - prevCycles;
 
