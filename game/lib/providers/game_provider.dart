@@ -168,6 +168,11 @@ class GameProvider extends ChangeNotifier {
   Future<Map<String, int>> addSteps(int? rawSteps) async {
     final validSteps = Calculations.normalizeSteps(rawSteps);
 
+    // 異常値（null/負値）や0歩入力は報酬なし
+    if (validSteps <= 0) {
+      return {'exp': 0, 'coins': 0, 'valid_steps': 0};
+    }
+
     final threshold = _todayFaceScale?.stepThreshold ?? 100;
     final prevTodaySteps = Calculations.normalizeSteps(_todaySteps);
     final prevCycles = prevTodaySteps ~/ threshold;
@@ -177,14 +182,14 @@ class GameProvider extends ChangeNotifier {
     final cyclesGained = newCycles - prevCycles;
 
     final coinsGained = cyclesGained * coinsPerStepCycle;
-    final expGained = cyclesGained * 10;
+    final expGained = await Calculations.getExpFromSteps(validSteps);
 
     _coins += coinsGained;
     _totalExp += expGained;
 
     await _save();
     notifyListeners();
-    return {'exp': expGained, 'coins': coinsGained};
+    return {'exp': expGained, 'coins': coinsGained, 'valid_steps': validSteps};
   }
 
   /// コインを使って連続ログインボーナスを回復

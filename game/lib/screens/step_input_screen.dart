@@ -31,10 +31,6 @@ class _StepInputScreenState extends State<StepInputScreen> {
       setState(() => _errorText = '正しい歩数を入力してください');
       return;
     }
-    if (steps > 100000) {
-      setState(() => _errorText = '歩数が多すぎます（最大10万歩）');
-      return;
-    }
 
     setState(() {
       _errorText = null;
@@ -44,19 +40,21 @@ class _StepInputScreenState extends State<StepInputScreen> {
 
     final game = context.read<GameProvider>();
     final result = await game.addSteps(steps);
+    final validSteps = result['valid_steps'] ?? steps;
 
     final threshold = game.todayFaceScale?.stepThreshold ?? 100;
-    final cycles = steps ~/ threshold;
 
     setState(() {
       _isLoading = false;
       _controller.clear();
       if (result['exp']! > 0) {
+        final cappedNote =
+            validSteps < steps ? '\n（入力値は上限10000歩として処理）' : '';
         _resultMessage =
-            '$steps歩を記録！\n+${result['exp']} EXP, +${result['coins']}🪙 コイン獲得！\n（${threshold}歩ごとにコインGET）';
+            '$validSteps歩を記録！\n+${result['exp']} EXP, +${result['coins']}🪙 コイン獲得！\n（${threshold}歩ごとにコインGET）$cappedNote';
       } else {
         _resultMessage =
-            '$steps歩を記録しました！\nあと${threshold - (game.todaySteps % threshold)}歩でコインがもらえるよ';
+            '$validSteps歩を記録しました！\nあと${threshold - (game.todaySteps % threshold)}歩でコインがもらえるよ';
       }
     });
   }
