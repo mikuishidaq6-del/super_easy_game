@@ -5,9 +5,14 @@ import '../models/game_models.dart';
 
 /// 健康アクティビティ記録画面
 /// 歯磨き・うがい・シャワー・お薬管理
-class ActivityScreen extends StatelessWidget {
+class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
 
+  @override
+  State<ActivityScreen> createState() => _ActivityScreenState();
+}
+
+class _ActivityScreenState extends State<ActivityScreen> {
   static const double _pageHorizontalPadding = 16;
   static const double _sectionGap = 24;
   static const double _cardRadius = 20;
@@ -60,10 +65,10 @@ class ActivityScreen extends StatelessWidget {
               const SizedBox(height: _sectionGap - 4),
               _SectionTitle(
                 title: 'お薬',
-                subtitle: '飲めたら記録。1日5回まで記録できます。',
+                subtitle: '飲めたら記録。1日${game.medicineLimit}回まで記録できます。',
               ),
               const SizedBox(height: 12),
-              _buildMedicineSection(theme),
+              _buildMedicineSection(context, game, theme),
             ],
           ),
         ),
@@ -141,7 +146,7 @@ class ActivityScreen extends StatelessWidget {
               Expanded(
                 child: _SummaryMetricCard(
                   label: 'お薬',
-                  value: '$medicineDone/5',
+                  value: '$medicineDone/${game.medicineLimit}',
                   accentColor: const Color(0xFF9C51D8),
                   icon: Icons.medication_outlined,
                 ),
@@ -153,7 +158,8 @@ class ActivityScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicineSection(ThemeData theme) {
+  Widget _buildMedicineSection(
+      BuildContext context, GameProvider game, ThemeData theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -199,11 +205,18 @@ class ActivityScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined,
+                    color: Color(0xFF9C51D8)),
+                tooltip: '上限回数を変更',
+                onPressed: () =>
+                    _showMedicineLimitDialog(context, game),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
-            '飲めたタイミングで記録しましょう。最大5回まで記録できます。',
+            '飲めたタイミングで記録しましょう。最大${game.medicineLimit}回まで記録できます。',
             style: theme.textTheme.bodySmall?.copyWith(
               color: const Color(0xFF7C5A97),
               height: 1.5,
@@ -214,6 +227,67 @@ class ActivityScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showMedicineLimitDialog(
+      BuildContext context, GameProvider game) async {
+    int selectedLimit = game.medicineLimit;
+    final newLimit = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('お薬の上限回数'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('1日に記録できるお薬の上限回数を設定します。'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('上限回数：'),
+                  Text(
+                    '$selectedLimit 回',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF9C51D8),
+                    ),
+                  ),
+                ],
+              ),
+              Slider(
+                value: selectedLimit.toDouble(),
+                min: 1,
+                max: 10,
+                divisions: 9,
+                label: '$selectedLimit 回',
+                activeColor: const Color(0xFF9C51D8),
+                onChanged: (v) =>
+                    setDialogState(() => selectedLimit = v.round()),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(selectedLimit),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF9C51D8),
+              ),
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (newLimit != null) {
+      await game.setMedicineLimit(newLimit);
+    }
   }
 }
 
@@ -765,17 +839,18 @@ class _MedicineTrackerState extends State<_MedicineTracker> {
     final theme = Theme.of(context);
     final game = context.watch<GameProvider>();
     final count = game.medicineCount;
-    final isDone = count >= 5;
+    final limit = game.medicineLimit;
+    final isDone = count >= limit;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: List.generate(5, (i) {
+          children: List.generate(limit, (i) {
             final filled = i < count;
             return Expanded(
               child: Padding(
-                padding: EdgeInsets.only(right: i == 4 ? 0 : 8),
+                padding: EdgeInsets.only(right: i == limit - 1 ? 0 : 8),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   height: 52,
@@ -806,7 +881,7 @@ class _MedicineTrackerState extends State<_MedicineTracker> {
         ),
         const SizedBox(height: 12),
         Text(
-          '今日の記録：$count / 5回',
+          '今日の記録：$count / $limit回',
           style: theme.textTheme.bodySmall?.copyWith(
             color: const Color(0xFF7C5A97),
             fontWeight: FontWeight.w600,
@@ -837,7 +912,7 @@ class _MedicineTrackerState extends State<_MedicineTracker> {
               onPressed: () => _onTap(game),
               icon: const Text('💊'),
               label: Text(
-                'お薬を記録する ($count/5)',
+                'お薬を記録する ($count/$limit)',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               style: FilledButton.styleFrom(
