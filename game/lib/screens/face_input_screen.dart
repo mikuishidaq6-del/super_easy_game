@@ -328,7 +328,7 @@ class _FaceInputScreenState extends State<FaceInputScreen>
       case CharacterStage.adult:
         return 'assets/images/cat_stage_5.png';
       case CharacterStage.legend:
-        return 'assets/images/cat_stage_5.png';
+        return 'assets/images/cat_stage_6.png';
     }
   }
 
