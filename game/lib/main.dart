@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/game_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/face_input_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +56,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// アプリ起動時：フェイス入力済みかでホーム画面か入力画面かを決める
+/// アプリ起動時：ログイン状態・フェイス入力済みかでルーティングする
 class AppEntryPoint extends StatelessWidget {
   const AppEntryPoint({super.key});
 
@@ -66,6 +67,9 @@ class AppEntryPoint extends StatelessWidget {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
+    }
+    if (!game.isLoggedIn) {
+      return const LoginScreen();
     }
     if (!game.hasTodayFaceInput) {
       return const FaceInputScreen();

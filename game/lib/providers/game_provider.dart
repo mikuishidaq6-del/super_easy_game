@@ -20,6 +20,9 @@ class GameProvider extends ChangeNotifier {
   static const _keyTodayActivities = 'today_activities';
   static const _keyGargleCount = 'today_gargle_count';
   static const _keyMedicineCount = 'today_medicine_count';
+  static const _keyUsername = 'username';
+  static const _keyPasswordHash = 'password_hash';
+  static const _keyIsRegistered = 'is_registered';
 
   // --- 状態変数 ---
   int _totalExp = 0;
@@ -32,6 +35,10 @@ class GameProvider extends ChangeNotifier {
   int _gargleCount = 0;
   int _medicineCount = 0;
   bool _initialized = false;
+  String _username = '';
+  String _passwordHash = '';
+  bool _isRegistered = false;
+  bool _isLoggedIn = false;
 
   // --- Getters ---
   int get totalExp => _totalExp;
@@ -44,6 +51,9 @@ class GameProvider extends ChangeNotifier {
   int get medicineCount => _medicineCount;
   bool get initialized => _initialized;
   bool get hasTodayFaceInput => _todayFaceScale != null;
+  String get username => _username;
+  bool get isRegistered => _isRegistered;
+  bool get isLoggedIn => _isLoggedIn;
 
   CharacterStage get characterStage => CharacterStage.fromExp(_totalExp);
 
@@ -108,8 +118,57 @@ class GameProvider extends ChangeNotifier {
     _gargleCount = prefs.getInt(_keyGargleCount) ?? 0;
     _medicineCount = prefs.getInt(_keyMedicineCount) ?? 0;
 
+    _username = prefs.getString(_keyUsername) ?? '';
+    _passwordHash = prefs.getString(_keyPasswordHash) ?? '';
+    _isRegistered = prefs.getBool(_keyIsRegistered) ?? false;
+
     _initialized = true;
     notifyListeners();
+  }
+
+  /// 新規ユーザー登録
+  Future<bool> register(String username, String password) async {
+    if (username.trim().isEmpty || password.isEmpty) return false;
+    final prefs = await SharedPreferences.getInstance();
+    _username = username.trim();
+    _passwordHash = _hashPassword(password);
+    _isRegistered = true;
+    _isLoggedIn = true;
+    await prefs.setString(_keyUsername, _username);
+    await prefs.setString(_keyPasswordHash, _passwordHash);
+    await prefs.setBool(_keyIsRegistered, true);
+    notifyListeners();
+    return true;
+  }
+
+  /// ログイン
+  Future<bool> login(String username, String password) async {
+    if (username.trim() != _username) return false;
+    if (_hashPassword(password) != _passwordHash) return false;
+    _isLoggedIn = true;
+    notifyListeners();
+    return true;
+  }
+
+  /// ログアウト
+  void logout() {
+    _isLoggedIn = false;
+    notifyListeners();
+  }
+
+  /// パスワードの簡易ハッシュ（ローカル端末専用アプリ向け）
+  ///
+  /// 注意: このハッシュ関数は個人端末専用アプリのプライバシー保護のみを目的と
+  /// しており、暗号学的な安全性は提供しません。サーバー通信や複数ユーザーが
+  /// 共有する環境では使用しないでください。
+  String _hashPassword(String password) {
+    // XOR-fold + base64 encode: 個人端末でのプライバシー目的のみ
+    final bytes = utf8.encode(password);
+    final hash = List<int>.filled(16, 0);
+    for (var i = 0; i < bytes.length; i++) {
+      hash[i % 16] ^= bytes[i];
+    }
+    return base64Encode(hash);
   }
 
   /// フェイスを選択して経験値を加算
