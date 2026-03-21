@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../models/game_models.dart';
+import '../models/Calculations.dart';
 
 /// ゲーム全体の状態を管理するProvider
 class GameProvider extends ChangeNotifier {
@@ -164,22 +165,31 @@ class GameProvider extends ChangeNotifier {
   }
 
   /// 歩数を手動入力して経験値とコインを加算
-  Future<Map<String, int>> addSteps(int steps) async {
+  Future<Map<String, int>> addSteps(int? rawSteps) async {
+    final validSteps = Calculations.normalizeSteps(rawSteps);
+
+    // 異常値（null/負値）や0歩入力は報酬なし
+    if (validSteps <= 0) {
+      return {'exp': 0, 'coins': 0, 'valid_steps': 0};
+    }
+
     final threshold = _todayFaceScale?.stepThreshold ?? 100;
-    final prevCycles = _todaySteps ~/ threshold;
-    _todaySteps += steps;
+    final prevTodaySteps = Calculations.normalizeSteps(_todaySteps);
+    final prevCycles = prevTodaySteps ~/ threshold;
+
+    _todaySteps = (prevTodaySteps + validSteps).clamp(0, StepConfig.stepMax);
     final newCycles = _todaySteps ~/ threshold;
     final cyclesGained = newCycles - prevCycles;
 
     final coinsGained = cyclesGained * coinsPerStepCycle;
-    final expGained = cyclesGained * 10;
+    final expGained = await Calculations.getExpFromSteps(validSteps);
 
     _coins += coinsGained;
     _totalExp += expGained;
 
     await _save();
     notifyListeners();
-    return {'exp': expGained, 'coins': coinsGained};
+    return {'exp': expGained, 'coins': coinsGained, 'valid_steps': validSteps};
   }
 
   /// コインを使って連続ログインボーナスを回復

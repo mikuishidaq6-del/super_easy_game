@@ -9,6 +9,63 @@ import math
 
 
 # ---------------------------------------------------------------------------
+# 歩数正規化・上限処理・経験値変換
+# ---------------------------------------------------------------------------
+
+STEP_MAX = 10000
+
+
+def normalize_steps(raw_steps: int | float | None) -> int:
+    """生歩数を有効歩数に正規化する。
+
+    仕様:
+    - valid_steps = min(raw_steps, 10000)
+    - raw_steps が None の場合は 0
+    - raw_steps が負の値の場合は 0
+
+    Args:
+        raw_steps: 生歩数
+
+    Returns:
+        有効歩数（0〜10000）
+    """
+    if raw_steps is None:
+        return 0
+
+    if raw_steps < 0:
+        return 0
+
+    steps = int(raw_steps)
+    return min(steps, STEP_MAX)
+
+
+def convert_valid_steps_to_exp(valid_steps: int) -> int:
+    """有効歩数を経験値に変換する。
+
+    step_rewards.csv の段階報酬ルールに合わせて変換する。
+
+    Args:
+        valid_steps: 正規化済み歩数（想定: 0〜10000）
+
+    Returns:
+        獲得経験値
+    """
+    steps = normalize_steps(valid_steps)
+
+    if 0 <= steps <= 99:
+        return 5
+    if 100 <= steps <= 299:
+        return 15
+    if 300 <= steps <= 599:
+        return 30
+    if 600 <= steps <= 999:
+        return 50
+    if 1000 <= steps <= 2000:
+        return 70
+    return 100
+
+
+# ---------------------------------------------------------------------------
 # コイン取得計算 (CoinGainWalk.md)
 # ---------------------------------------------------------------------------
 

@@ -14,6 +14,8 @@ from calculations import (
     calculate_coin_poor_health,
     calculate_coin_rehabilitation,
     calculate_required_exp,
+    normalize_steps,
+    convert_valid_steps_to_exp,
 )
 
 
@@ -144,6 +146,32 @@ class TestCalculateRequiredExp(unittest.TestCase):
         exps = [calculate_required_exp(lv) for lv in range(1, 11)]
         for i in range(len(exps) - 1):
             self.assertLess(exps[i], exps[i + 1])
+
+
+class TestStepNormalizationAndExpConversion(unittest.TestCase):
+    """歩数正規化・上限処理・経験値変換のテスト"""
+
+    def test_normalize_steps_caps_at_10000(self):
+        """12000 歩は上限 10000 歩として扱う"""
+        self.assertEqual(normalize_steps(12000), 10000)
+
+    def test_normalize_steps_keeps_value_when_within_limit(self):
+        """8000 歩はそのまま有効歩数として扱う"""
+        self.assertEqual(normalize_steps(8000), 8000)
+
+    def test_normalize_steps_handles_none(self):
+        """None は 0 歩として扱う"""
+        self.assertEqual(normalize_steps(None), 0)
+
+    def test_normalize_steps_handles_negative(self):
+        """負の歩数は 0 歩として扱う"""
+        self.assertEqual(normalize_steps(-1), 0)
+
+    def test_convert_valid_steps_to_exp_uses_normalized_steps(self):
+        """有効歩数から経験値に変換できる"""
+        self.assertEqual(convert_valid_steps_to_exp(12000), 100)
+        self.assertEqual(convert_valid_steps_to_exp(8000), 100)
+        self.assertEqual(convert_valid_steps_to_exp(50), 5)
 
 
 if __name__ == "__main__":
