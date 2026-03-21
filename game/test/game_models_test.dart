@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_easy_game/models/game_models.dart';
+import 'package:super_easy_game/providers/game_provider.dart';
 
 void main() {
   group('FaceScale tests', () {
@@ -107,6 +108,13 @@ void main() {
       final medicine =
           HealthActivity.all.firstWhere((a) => a.id == 'medicine');
       expect(medicine.expReward, greaterThan(0));
+    });
+  });
+
+  group('GameProvider medicine limit tests', () {
+    test('defaultMedicineLimit is 5', () {
+      // デフォルトのお薬上限は5回
+      expect(GameProvider.defaultMedicineLimit, 5);
     });
   });
 }
