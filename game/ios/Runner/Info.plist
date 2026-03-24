@@ -53,6 +53,24 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- Google Sign-In URL scheme.
+	     TODO: Replace REVERSED_CLIENT_ID with the value from your GoogleService-Info.plist.
+	     1. Go to https://console.cloud.google.com/ and create an OAuth 2.0 client ID for iOS.
+	     2. Download GoogleService-Info.plist and place it in ios/Runner/
+	     3. Copy the REVERSED_CLIENT_ID value and replace the placeholder below. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+			<!-- TODO: Replace with your REVERSED_CLIENT_ID from GoogleService-Info.plist
+			     Example format: com.googleusercontent.apps.123456789012-abcdefghijklmnopqrstuvwxyz012345 -->
+				<string>com.googleusercontent.apps.YOUR_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _errorMessage;
 
   @override
@@ -80,6 +81,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    final game = context.read<GameProvider>();
+    final result = await game.loginWithGoogle();
+
+    if (mounted) {
+      setState(() {
+        _isGoogleLoading = false;
+      });
+      if (result != null && result != 'success') {
+        setState(() {
+          _errorMessage = 'Googleログインに失敗しました。もう一度お試しください。';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -125,7 +147,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // フォームカード
+                // Googleログインボタン
+                _GoogleSignInButton(
+                  isLoading: _isGoogleLoading,
+                  onPressed: _signInWithGoogle,
+                ),
+                const SizedBox(height: 16),
+
+                // 区切り線
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'または',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // フォームカード（ユーザー名・パスワード）
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -181,7 +226,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             textInputAction: _isRegisterMode
                                 ? TextInputAction.next
                                 : TextInputAction.done,
-                            onFieldSubmitted: _isRegisterMode ? null : (_) => _submit(),
+                            onFieldSubmitted:
+                                _isRegisterMode ? null : (_) => _submit(),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'パスワードを入力してください';
@@ -300,4 +346,121 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
+
+/// Googleログインボタン（Googleブランドガイドライン準拠スタイル）
+class _GoogleSignInButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const _GoogleSignInButton({
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF1F1F1F),
+          side: const BorderSide(color: Color(0xFFDADCE0)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Googleのカラーアイコン
+                  _GoogleLogo(),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Googleでログイン',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1F1F1F),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Google "G" ロゴを描画するウィジェット
+class _GoogleLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(24, 24),
+      painter: _GoogleLogoPainter(),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // 青（右上）
+    final paintBlue = Paint()..color = const Color(0xFF4285F4);
+    // 赤（右下）
+    final paintRed = Paint()..color = const Color(0xFFEA4335);
+    // 黄（左下）
+    final paintYellow = Paint()..color = const Color(0xFFFBBC05);
+    // 緑（左上）
+    final paintGreen = Paint()..color = const Color(0xFF34A853);
+
+    // 4分割の円弧で G のカラー部分を描画
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.57, // -90度（上）
+      1.57,  // 90度 → 右上（青）
+      true,
+      paintBlue,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      0,    // 0度（右）
+      1.57, // 90度 → 右下（赤）
+      true,
+      paintRed,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      1.57,  // 90度（下）
+      1.57,  // 90度 → 左下（黄）
+      true,
+      paintYellow,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      3.14,  // 180度（左）
+      1.57,  // 90度 → 左上（緑）
+      true,
+      paintGreen,
+    );
+
+    // 中央の白い円（ドーナツ効果）
+    final paintWhite = Paint()..color = Colors.white;
+    canvas.drawCircle(center, radius * 0.6, paintWhite);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
