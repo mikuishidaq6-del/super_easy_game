@@ -10,6 +10,7 @@ class GameProvider extends ChangeNotifier {
   // --- ゲームバランス定数 ---
   static const int streakRecoveryCost = 15; // ストリーク回復に必要なコイン数
   static const int coinsPerStepCycle = 15;  // 歩数閾値達成ごとのコイン報酬
+  static const int defaultMedicineLimit = 5; // お薬の1日あたりのデフォルト上限回数
 
   // --- 永続化キー ---
   static const _keyExp = 'total_exp';
@@ -26,6 +27,7 @@ class GameProvider extends ChangeNotifier {
   static const _keyIsRegistered = 'is_registered';
   static const _keyGoogleUserId = 'google_user_id';
   static const _keyLoginMethod = 'login_method';
+  static const _keyMedicineLimit = 'medicine_limit';
 
   // --- 状態変数 ---
   int _totalExp = 0;
@@ -37,6 +39,7 @@ class GameProvider extends ChangeNotifier {
   Set<String> _todayActivities = {};
   int _gargleCount = 0;
   int _medicineCount = 0;
+  int _medicineLimit = defaultMedicineLimit;
   bool _initialized = false;
   String _username = '';
   String _passwordHash = '';
@@ -59,6 +62,7 @@ class GameProvider extends ChangeNotifier {
   Set<String> get todayActivities => Set.unmodifiable(_todayActivities);
   int get gargleCount => _gargleCount;
   int get medicineCount => _medicineCount;
+  int get medicineLimit => _medicineLimit;
   bool get initialized => _initialized;
   bool get hasTodayFaceInput => _todayFaceScale != null;
   String get username => _username;
@@ -128,6 +132,7 @@ class GameProvider extends ChangeNotifier {
     }
     _gargleCount = prefs.getInt(_keyGargleCount) ?? 0;
     _medicineCount = prefs.getInt(_keyMedicineCount) ?? 0;
+    _medicineLimit = prefs.getInt(_keyMedicineLimit) ?? defaultMedicineLimit;
 
     _username = prefs.getString(_keyUsername) ?? '';
     _passwordHash = prefs.getString(_keyPasswordHash) ?? '';
@@ -309,8 +314,8 @@ class GameProvider extends ChangeNotifier {
       if (_gargleCount >= 5) return 0;
       _gargleCount++;
     } else if (activity.id == 'medicine') {
-      // お薬は1日に複数回記録可能（最大3回）
-      if (_medicineCount >= 3) return 0;
+      // お薬は1日に複数回記録可能（上限はユーザー設定値）
+      if (_medicineCount >= _medicineLimit) return 0;
       _medicineCount++;
     } else {
       // その他は1日1回
@@ -328,7 +333,7 @@ class GameProvider extends ChangeNotifier {
 
   bool isActivityDone(String activityId) {
     if (activityId == 'gargle') return _gargleCount >= 5;
-    if (activityId == 'medicine') return _medicineCount >= 3;
+    if (activityId == 'medicine') return _medicineCount >= _medicineLimit;
     return _todayActivities.contains(activityId);
   }
 
@@ -339,6 +344,14 @@ class GameProvider extends ChangeNotifier {
   }
 
   String _todayString() => DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  /// お薬の1日上限回数を変更する
+  /// [limit] は 1〜10 の範囲で指定する（範囲外の値は自動でクランプされる）
+  Future<void> setMedicineLimit(int limit) async {
+    _medicineLimit = limit.clamp(1, 10);
+    await _save();
+    notifyListeners();
+  }
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
@@ -357,5 +370,6 @@ class GameProvider extends ChangeNotifier {
         _keyTodayActivities, jsonEncode(_todayActivities.toList()));
     await prefs.setInt(_keyGargleCount, _gargleCount);
     await prefs.setInt(_keyMedicineCount, _medicineCount);
+    await prefs.setInt(_keyMedicineLimit, _medicineLimit);
   }
 }
