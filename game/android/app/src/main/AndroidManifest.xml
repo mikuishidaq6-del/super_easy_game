@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Google Sign-In requires internet access -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="super_easy_game"
         android:name="${applicationName}"

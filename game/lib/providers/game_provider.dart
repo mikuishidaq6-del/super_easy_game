@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/game_models.dart';
 
 /// ゲーム全体の状態を管理するProvider
@@ -21,6 +22,11 @@ class GameProvider extends ChangeNotifier {
   static const _keyTodayActivities = 'today_activities';
   static const _keyGargleCount = 'today_gargle_count';
   static const _keyMedicineCount = 'today_medicine_count';
+  static const _keyUsername = 'username';
+  static const _keyPasswordHash = 'password_hash';
+  static const _keyIsRegistered = 'is_registered';
+  static const _keyGoogleUserId = 'google_user_id';
+  static const _keyLoginMethod = 'login_method';
   static const _keyMedicineLimit = 'medicine_limit';
 
   // --- 状態変数 ---
@@ -35,6 +41,17 @@ class GameProvider extends ChangeNotifier {
   int _medicineCount = 0;
   int _medicineLimit = defaultMedicineLimit;
   bool _initialized = false;
+  String _username = '';
+  String _passwordHash = '';
+  bool _isRegistered = false;
+  bool _isLoggedIn = false;
+  String _googleUserId = '';
+  String _loginMethod = ''; // 'password' or 'google'
+
+  // Google Sign-In インスタンス
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
 
   // --- Getters ---
   int get totalExp => _totalExp;
@@ -48,6 +65,10 @@ class GameProvider extends ChangeNotifier {
   int get medicineLimit => _medicineLimit;
   bool get initialized => _initialized;
   bool get hasTodayFaceInput => _todayFaceScale != null;
+  String get username => _username;
+  bool get isRegistered => _isRegistered;
+  bool get isLoggedIn => _isLoggedIn;
+  String get loginMethod => _loginMethod;
 
   CharacterStage get characterStage => CharacterStage.fromExp(_totalExp);
 
@@ -113,8 +134,96 @@ class GameProvider extends ChangeNotifier {
     _medicineCount = prefs.getInt(_keyMedicineCount) ?? 0;
     _medicineLimit = prefs.getInt(_keyMedicineLimit) ?? defaultMedicineLimit;
 
+    _username = prefs.getString(_keyUsername) ?? '';
+    _passwordHash = prefs.getString(_keyPasswordHash) ?? '';
+    _isRegistered = prefs.getBool(_keyIsRegistered) ?? false;
+    _googleUserId = prefs.getString(_keyGoogleUserId) ?? '';
+    _loginMethod = prefs.getString(_keyLoginMethod) ?? '';
+
     _initialized = true;
     notifyListeners();
+  }
+
+  /// 新規ユーザー登録
+  Future<bool> register(String username, String password) async {
+    if (username.trim().isEmpty || password.isEmpty) return false;
+    final prefs = await SharedPreferences.getInstance();
+    _username = username.trim();
+    _passwordHash = _hashPassword(password);
+    _isRegistered = true;
+    _isLoggedIn = true;
+    _loginMethod = 'password';
+    await prefs.setString(_keyUsername, _username);
+    await prefs.setString(_keyPasswordHash, _passwordHash);
+    await prefs.setBool(_keyIsRegistered, true);
+    await prefs.setString(_keyLoginMethod, 'password');
+    notifyListeners();
+    return true;
+  }
+
+  /// パスワードでログイン
+  Future<bool> login(String username, String password) async {
+    if (username.trim() != _username) return false;
+    if (_hashPassword(password) != _passwordHash) return false;
+    _isLoggedIn = true;
+    _loginMethod = 'password';
+    notifyListeners();
+    return true;
+  }
+
+  /// Googleアカウントでログイン
+  ///
+  /// 成功時は true を返し、失敗またはキャンセル時は null を返す。
+  /// エラー時は例外メッセージを文字列で返す。
+  Future<String?> loginWithGoogle() async {
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // ユーザーがキャンセル
+        return null;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      _googleUserId = googleUser.id;
+      _username = googleUser.displayName ?? googleUser.email;
+      _isRegistered = true;
+      _isLoggedIn = true;
+      _loginMethod = 'google';
+
+      await prefs.setString(_keyGoogleUserId, _googleUserId);
+      await prefs.setString(_keyUsername, _username);
+      await prefs.setBool(_keyIsRegistered, true);
+      await prefs.setString(_keyLoginMethod, 'google');
+
+      notifyListeners();
+      return 'success';
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// ログアウト
+  Future<void> logout() async {
+    if (_loginMethod == 'google') {
+      await _googleSignIn.signOut();
+    }
+    _isLoggedIn = false;
+    notifyListeners();
+  }
+
+  /// パスワードの簡易ハッシュ（ローカル端末専用アプリ向け）
+  ///
+  /// 注意: このハッシュ関数は個人端末専用アプリのプライバシー保護のみを目的と
+  /// しており、暗号学的な安全性は提供しません。サーバー通信や複数ユーザーが
+  /// 共有する環境では使用しないでください。
+  String _hashPassword(String password) {
+    // XOR-fold + base64 encode: 個人端末でのプライバシー目的のみ
+    final bytes = utf8.encode(password);
+    final hash = List<int>.filled(16, 0);
+    for (var i = 0; i < bytes.length; i++) {
+      hash[i % 16] ^= bytes[i];
+    }
+    return base64Encode(hash);
   }
 
   /// フェイスを選択して経験値を加算

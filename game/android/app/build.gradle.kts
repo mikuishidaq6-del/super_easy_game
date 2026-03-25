@@ -3,6 +3,11 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // TODO: Google Sign-In requires google-services.
+    // 1. Go to https://console.cloud.google.com/ and create an OAuth 2.0 client ID for Android.
+    // 2. Download google-services.json and place it in android/app/
+    // 3. Uncomment the line below:
+    // id("com.google.gms.google-services")
 }
 
 android {
