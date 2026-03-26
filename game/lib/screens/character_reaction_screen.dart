@@ -116,9 +116,14 @@ class _CharacterReactionScreenState extends State<CharacterReactionScreen>
                 // キャラクターバウンスアニメ
                 ScaleTransition(
                   scale: _bounceAnim,
-                  child: Text(
-                    stage.emoji,
-                    style: const TextStyle(fontSize: 100),
+                  child: Image.asset(
+                    _getStageImage(stage),
+                    height: 160,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Text(
+                      stage.emoji,
+                      style: const TextStyle(fontSize: 100),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -192,6 +197,17 @@ class _CharacterReactionScreenState extends State<CharacterReactionScreen>
         ),
       ),
     );
+  }
+
+  String _getStageImage(CharacterStage stage) {
+    switch (stage) {
+      case CharacterStage.egg:    return 'assets/images/cat_stage_1.png';
+      case CharacterStage.baby:   return 'assets/images/cat_stage_2.png';
+      case CharacterStage.child:  return 'assets/images/cat_stage_3.png';
+      case CharacterStage.teen:   return 'assets/images/cat_stage_4.png';
+      case CharacterStage.adult:  return 'assets/images/cat_stage_5.png';
+      case CharacterStage.legend: return 'assets/images/cat_stage_6.png';
+    }
   }
 
   Widget _buildExpGainBadge(ThemeData theme) {
